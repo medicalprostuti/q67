@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোন কণা “ঈশ্বর কণা” নামে পরিচিত?",
+          options: {
+            a: "লেপটন কণা",
+            b: "হিগস বোসন কণা",
+            c: "বোসন কণা",
+            d: "মেসন কণা",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>হিগস বোসন (Higgs Boson)</b> কণাটি 'ঈশ্বর কণা' (God Particle) নামে পরিচিত। এই কণাটি হিগস ক্ষেত্রের সাথে মিথস্ক্রিয়ার মাধ্যমে অন্যান্য মৌলিক কণাগুলোকে ভর প্রদান করে।</p>",
+        },
+        {
+          id: 2,
+          question: "নিচের কোন কণার প্রতিকণা নেই?",
+          options: {
+            a: "ইলেকট্রন",
+            b: "হ্যাড্রন",
+            c: "লেপটন",
+            d: "ফোটন",
+          },
+          correct: "d",
+          explanation:
+            "<p><b>ফোটন (Photon)</b> হলো এমন একটি কণা যা তার নিজেরই প্রতিকণা। অর্থাৎ, ফোটনের কোনো স্বতন্ত্র প্রতিকণা নেই।</p>",
+        },
+        {
+          id: 3,
+          question: "কোন কণার বিনিময়ের মাধ্যমে তাড়িত চৌম্বক বল কার্যকর হয়?",
+          options: {
+            a: "প্রোটন",
+            b: "বোসন",
+            c: "ফোটন",
+            d: "গুয়ন",
+          },
+          correct: "c",
+          explanation:
+            "<p>তাড়িত চৌম্বক বল (Electromagnetic Force) কার্যকর হয় <b>ফোটন (Photon)</b> কণার বিনিময়ের মাধ্যমে, যা চার্জযুক্ত কণাগুলোর মধ্যে মিথস্ক্রিয়া ঘটায়।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "যে সকল কণা তড়িচ্চুম্বকীয় মিথস্ক্রিয়ায় অংশগ্রহণ করে সেগুলো হলো-",
+          options: {
+            a: "গ্রাভিটন",
+            b: "লেপটন",
+            c: "ফোটন",
+            d: "হ্যাড্রন",
+          },
+          correct: "c",
+          explanation:
+            "<p>তড়িচ্চুম্বকীয় মিথস্ক্রিয়ার বাহক কণা হলো <b>ফোটন (Photon)</b>। এটি চার্জযুক্ত কণাগুলির মধ্যে বলের আদান-প্রদান ঘটায়।</p>",
+        },
+        {
+          id: 5,
+          question: "মৌলিক কণিকা কয় ধরনের?",
+          options: {
+            a: "তিন ধরনের",
+            b: "দুই ধরনের",
+            c: "চার ধরনের",
+            d: "পাঁচ ধরনের",
+          },
+          correct: "b",
+          explanation:
+            "<p>স্ট্যান্ডার্ড মডেল অনুযায়ী, মৌলিক কণিকাগুলোকে প্রধানত দুই ভাগে ভাগ করা যায়: <b>ফার্মিয়ন (Fermion)</b>, যা পদার্থ গঠন করে এবং <b>বোসন (Boson)</b>, যা বল বহন করে।</p>",
+        },
+        {
+          id: 6,
+          question: "লেপটন কণার স্পিন-",
+          options: {
+            a: "1",
+            b: "1/2",
+            c: "3/2",
+            d: "0",
+          },
+          correct: "b",
+          explanation:
+            "<p>লেপটন (Lepton) কণাগুলো ফার্মিয়ন শ্রেণির অন্তর্গত, যাদের স্পিন (Spin) মান <b>1/2</b>।</p>",
+        },
+        {
+          id: 7,
+          question: "লেপটন কণা কয় ধরনের?",
+          options: {
+            a: "তিন ধরনের",
+            b: "চার ধরনের",
+            c: "পাঁচ ধরনের",
+            d: "দুই ধরনের",
+          },
+          correct: "a",
+          explanation:
+            "<p>লেপটন কণা প্রধানত তিনটি জেনারেশনে বিদ্যমান। প্রতিটি জেনারেশনে দুটি করে কণা (একটি চার্জযুক্ত লেপটন ও একটি নিউট্রিনো) থাকে। সুতরাং, জেনারেশন অনুযায়ী, লেপটন কণা তিন ধরনের।</p>",
+        },
+        {
+          id: 8,
+          question: "হ্যাড্রন কণা কত ধরনের?",
+          options: {
+            a: "তিন ধরনের",
+            b: "চার ধরনের",
+            c: "পাঁচ ধরনের",
+            d: "দুই ধরনের",
+          },
+          correct: "d",
+          explanation:
+            "<p>হ্যাড্রন (Hadron) কণাগুলো প্রধানত দুই ধরনের: ১. <b>বেরিয়ন (Baryons)</b>, যা তিনটি কোয়ার্ক দিয়ে গঠিত (যেমন প্রোটন) এবং ২. <b>মেসন (Mesons)</b>, যা একটি কোয়ার্ক এবং একটি এন্টিকোয়ার্ক দিয়ে গঠিত।</p>",
+        },
+        {
+          id: 9,
+          question: "গেজ বোসনের স্পিন হলো-",
+          options: {
+            a: "-1",
+            b: "0",
+            c: "-2",
+            d: "1",
+          },
+          correct: "d",
+          explanation:
+            "<p>গেজ বোসন (Gauge Bosons) হলো মৌলিক বলের বাহক কণা। স্ট্যান্ডার্ড মডেল অনুযায়ী, এদের স্পিন <b>1</b> হয় (ব্যতিক্রম: গ্র্যাভিটনের স্পিন 2)।</p>",
+        },
+        {
+          id: 10,
+          question: "নিচের কোনটি লেপটন শ্রেণির অন্তর্ভুক্ত?",
+          options: {
+            a: "নিউট্রন",
+            b: "পাইয়ন",
+            c: "প্রোটন",
+            d: "ইলেকট্রন",
+          },
+          correct: "d",
+          explanation:
+            "<p>লেপটন (Lepton) হলো মৌলিক কণার একটি শ্রেণি যার অন্তর্ভুক্ত হলো <b>ইলেকট্রন</b>, মিউওন, টাউ এবং তাদের সংশ্লিষ্ট নিউট্রিনো।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "পরমাণু নিউক্লিয়াসে অবস্থিত প্রোটন ও নিউট্রনকে একত্রে বলা হয়-",
+          options: {
+            a: "লেপটন",
+            b: "গ্রাভিটন",
+            c: "হেড্রন",
+            d: "নিউক্লিয়ন",
+          },
+          correct: "d",
+          explanation:
+            "<p>পরমাণুর নিউক্লিয়াসে অবস্থিত প্রোটন এবং নিউট্রনকে একত্রে <b>নিউক্লিয়ন (Nucleon)</b> বলা হয়।</p>",
+        },
+        {
+          id: 12,
+          question: "ইলেকট্রনের এন্টি পার্টিকেল হলো-",
+          options: {
+            a: "প্রোটন",
+            b: "নিউট্রন",
+            c: "পজিট্রন",
+            d: "এন্টি প্রোটন",
+          },
+          correct: "c",
+          explanation:
+            "<p>ইলেকট্রনের এন্টি পার্টিকেল বা প্রতিকণা হলো <b>পজিট্রন (Positron)</b>, যার ভর ইলেকট্রনের সমান কিন্তু চার্জ ধনাত্মক।</p>",
+        },
+        {
+          id: 13,
+          question: "পজিট্রনের ভর কোন কণার ভরের সমান?",
+          options: {
+            a: "প্রোটন",
+            b: "a-কণা",
+            c: "নিউট্রন",
+            d: "ইলেকট্রন",
+          },
+          correct: "d",
+          explanation:
+            "<p>পজিট্রন হলো ইলেকট্রনের প্রতিকণা, তাই এদের উভয়ের ভর একই।</p>",
+        },
+        {
+          id: 14,
+          question: "সকল কোয়ার্কই ফার্মিয়ন যাদের স্পিন-",
+          options: {
+            a: "0",
+            b: "1",
+            c: "1/2",
+            d: "-1",
+          },
+          correct: "c",
+          explanation:
+            "<p>কোয়ার্ক (Quark) হলো মৌলিক ফার্মিয়ন কণা। সকল ফার্মিয়নের স্পিন অর্ধ-পূর্ণসংখ্যা হয় এবং কোয়ার্কের স্পিন <b>1/2</b>।</p>",
+        },
+        {
+          id: 15,
+          question: "বিশ্বের সকল কণাকে দুই ভাগে ভাগ করা যায়। এরা হলো-",
+          options: {
+            a: "ফার্মিয়ন ও বোসন",
+            b: "কোয়ার্ক ও লেপটন",
+            c: "গেজ বোসন ও হিগস বোসন",
+            d: "মিউয়ন ও টার্ড",
+          },
+          correct: "a",
+          explanation:
+            "<p>কণা পদার্থবিজ্ঞানের স্ট্যান্ডার্ড মডেল অনুযায়ী, মহাবিশ্বের সকল মৌলিক কণাকে তাদের স্পিনের ভিত্তিতে প্রধানত দুটি শ্রেণিতে ভাগ করা হয়: <b>ফার্মিয়ন (Fermions)</b> এবং <b>বোসন (Bosons)</b>।</p>",
+        },
+        {
+          id: 16,
+          question: "মেসন সৃষ্টি হয়-",
+          options: {
+            a: "যে কোন সংখ্যক কোয়ার্ক দ্বারা",
+            b: "তিন বর্ণের তিনটি কোয়ার্ক দ্বারা",
+            c: "একই বর্ণের তিনটি কোয়ার্ক দ্বারা",
+            d: "বর্ণহীন কোয়ার্ক-এন্টিকোয়ার্ক জোড় দ্বারা",
+          },
+          correct: "d",
+          explanation:
+            "<p>মেসন (Meson) হলো একটি কোয়ার্ক এবং একটি এন্টিকোয়ার্কের সমন্বয়ে গঠিত একটি যৌগিক কণা।</p>",
+        },
+        {
+          id: 17,
+          question: "নিচের কোনটি কোয়ার্কের অন্তর্ভুক্ত হতে পারে?",
+          options: {
+            a: "লাল, সবুজ",
+            b: "মিউওন, পাইওন",
+            c: "লেপটন, গুওন",
+            d: "উপর, নিচ",
+          },
+          correct: "d",
+          explanation:
+            "<p>কোয়ার্ক কণাগুলো ৬টি 'ফ্লেভার' বা প্রকারে আসে। এগুলো হলো: আপ (up), ডাউন (down), চার্ম (charm), স্ট্রেঞ্জ (strange), টপ (top) এবং বটম (bottom)। তাই, <b>'উপর' (আপ)</b> এবং <b>'নিচ' (ডাউন)</b> কোয়ার্কের ফ্লেভার।</p>",
+        },
+        {
+          id: 18,
+          question: "দুর্বল মিথষ্ক্রিয়ার মধ্যস্থতাকারী কণা হল-",
+          options: {
+            a: "ফোটন",
+            b: "মেসন",
+            c: "W+, W-, Z0",
+            d: "হেড্রন",
+          },
+          correct: "c",
+          explanation:
+            "<p>দুর্বল মিথস্ক্রিয়ার (Weak Interaction) মধ্যস্থতাকারী কণাগুলো হলো <b>W<sup>+</sup>, W<sup>-</sup> এবং Z<sup>0</sup> বোসন</b>।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "যে সকল বিনিময় কণা মহাকর্ষীয় মিথক্রিয়ার মধ্যস্থতাকারী সেগুলো হলো-",
+          options: {
+            a: "পায়ন",
+            b: "গ্রাভিটন",
+            c: "নিউক্লিয়ন",
+            d: "আয়ন",
+          },
+          correct: "b",
+          explanation:
+            "<p>মহাকর্ষীয় মিথস্ক্রিয়ার মধ্যস্থতাকারী কণা হলো <b>গ্রাভিটন (Graviton)</b>, যা এখনও তাত্ত্বিকভাবে প্রস্তাবিত একটি কণা।</p>",
+        },
+        {
+          id: 20,
+          question: "কোয়ার্কের বর্ণগুলো হচ্ছে-",
+          options: {
+            a: "লাল, হলুদ, নীল",
+            b: "লাল, নীল, বেগুনি",
+            c: "লাল, হলুদ, বেগুনি",
+            d: "লাল, সবুজ, নীল",
+          },
+          correct: "d",
+          explanation:
+            "<p>কোয়ার্কের একটি বিশেষ বৈশিষ্ট্য হলো 'কালার চার্জ'। কোয়ার্কের তিনটি মৌলিক কালার চার্জ রয়েছে: <b>লাল (red), সবুজ (green) এবং নীল (blue)</b>।</p>",
+        },
+        {
+          id: 21,
+          question: "দুইটি up এবং একটি down কোয়ার্ক মিলে তৈরি করে-",
+          options: {
+            a: "নিউট্রন",
+            b: "প্রোটন",
+            c: "মেসন",
+            d: "মিউন",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>প্রোটন (Proton)</b> দুটি আপ কোয়ার্ক (up quark, u) এবং একটি ডাউন কোয়ার্ক (down quark, d) দিয়ে গঠিত। এদের সম্মিলিত চার্জ +1 (2/3 + 2/3 - 1/3 = 1)।</p>",
+        },
+        {
+          id: 22,
+          question: "প্রোটন ও নিউট্রনকে একত্রে কী বলা হয়?",
+          options: {
+            a: "বোসন",
+            b: "লেপটন",
+            c: "মেসন",
+            d: "বেরিয়ন",
+          },
+          correct: "d",
+          explanation:
+            "<p>প্রোটন এবং নিউট্রন উভয়ই তিনটি কোয়ার্ক দ্বারা গঠিত, তাই এরা <b>বেরিয়ন (Baryon)</b> শ্রেণির অন্তর্গত।</p>",
+        },
+        {
+          id: 23,
+          question: "মেসন ও বেরিয়নকে একত্রে কী বলা হয়?",
+          options: {
+            a: "বোসন",
+            b: "লেপটন",
+            c: "নিউক্লীয়ন",
+            d: "হ্যাড্রন",
+          },
+          correct: "d",
+          explanation:
+            "<p>মেসন এবং বেরিয়ন উভয়ই কোয়ার্ক দ্বারা গঠিত যৌগিক কণা, এবং এদেরকে একত্রে <b>হ্যাড্রন (Hadrons)</b> বলা হয়।</p>",
+        },
+        {
+          id: 24,
+          question: "গ্রাভিটনের স্পিন সংখ্যা কত?",
+          options: {
+            a: "0",
+            b: "1",
+            c: "1/2",
+            d: "2",
+          },
+          correct: "d",
+          explanation:
+            "<p>গ্রাভিটন (Graviton) হলো মহাকর্ষীয় বলের তাত্ত্বিক বাহক কণা। এটি একটি বোসন কণা এবং এর স্পিন সংখ্যা <b>2</b> বলে অনুমান করা হয়।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "মহাবিশ্ব সৃষ্টির শুরুতে উৎপন্ন হয়ে বিভিন্ন ভরহীন কণায় ভর যুক্ত করে অদৃশ্য হয় কোনটি?",
+          options: {
+            a: "মেসন",
+            b: "বোসন",
+            c: "হিগস বোসন",
+            d: "গেজ বোসন",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>হিগস বোসন (Higgs Boson)</b> কণাটি হিগস ক্ষেত্রের মাধ্যমে অন্যান্য মৌলিক কণাদের ভর প্রদান করে। এই প্রক্রিয়াটি 'হিগস মেকানিজম' নামে পরিচিত।</p>",
+        },
+        {
+          id: 26,
+          question: "প্রোটন, নিউট্রন, মেসন ইত্যাদি কণা কী দ্বারা গঠিত?",
+          options: {
+            a: "লেপটন",
+            b: "কোয়ার্ক",
+            c: "বোসন",
+            d: "ফার্মিয়ন",
+          },
+          correct: "b",
+          explanation:
+            "<p>প্রোটন, নিউট্রন এবং মেসন কণাগুলো <b>কোয়ার্ক (Quark)</b> নামক মৌলিক কণা দ্বারা গঠিত।</p>",
+        },
+        {
+          id: 27,
+          question: "কোয়ার্কের সংখ্যা-",
+          options: {
+            a: "দুই জেনারেশনে চার",
+            b: "দুই জেনারেশনে ছয়",
+            c: "তিন জেনারেশনে ছয়",
+            d: "তিন জেনারেশনে নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>স্ট্যান্ডার্ড মডেল অনুযায়ী, কোয়ার্ক মোট ছয় ধরনের হয়, যা তিনটি জেনারেশনে বিভক্ত। প্রতিটি জেনারেশনে দুটি করে কোয়ার্ক থাকে। সুতরাং, কোয়ার্কের সংখ্যা <b>তিন জেনারেশনে ছয়টি</b>।</p>",
+        },
+        {
+          id: 28,
+          question: "লেপটনের সংখ্যা-",
+          options: {
+            a: "দুই জেনারেশনে চার",
+            b: "দুই জেনারেশনে ছয়",
+            c: "তিন জেনারেশনে ছয়",
+            d: "তিন জেনারেশনে নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>লেপটন কণা মোট ছয় ধরনের হয়, যা তিনটি জেনারেশনে বিভক্ত। প্রতিটি জেনারেশনে একটি চার্জযুক্ত লেপটন এবং একটি নিউট্রিনো থাকে। সুতরাং, লেপটনের সংখ্যা <b>তিন জেনারেশনে ছয়টি</b>।</p>",
+        },
+        {
+          id: 29,
+          question: "কোয়ার্কের বর্ণ কয়টি?",
+          options: {
+            a: "দুটি",
+            b: "তিনটি",
+            c: "চারটি",
+            d: "ছয়টি",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোয়ার্কের 'কালার চার্জ' বা বর্ণ <b>তিনটি</b>: লাল, সবুজ এবং নীল।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "কোয়ার্কের চার্জ ও বেরিয়ন সংখ্যা ভগ্নাংশিক হলেও এরা এমনভাবে দল বেঁধে থাকে যাতে এদের মোট চার্জ ও বেরিয়ন সংখ্যা-",
+          options: {
+            a: "0 বা 1 হয়",
+            b: "e বা e হয়",
+            c: "0 বা −1 হয়",
+            d: "1 বা 2 হয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>কোয়ার্কগুলো যখন প্রোটন বা নিউট্রনের মতো হ্যাড্রন গঠন করে, তখন তাদের মোট চার্জ এবং বেরিয়ন সংখ্যা পূর্ণসংখ্যা হয়, যা <b>0 বা 1</b> হতে পারে।</p>",
+        },
+        {
+          id: 31,
+          question: "লেপটনের চার্জ-",
+          options: {
+            a: "0 বা ±e হয়",
+            b: "−1 বা 1 হয়",
+            c: "0 বা −e হয়",
+            d: "1 বা 2 হয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>লেপটনগুলোর চার্জ 0 (নিউট্রিনো) অথবা -e (ইলেকট্রন, মিউওন, টাউ) হয়। এদের প্রতিকণার চার্জ +e হয়। সুতরাং, লেপটন পরিবারের কণাগুলোর চার্জ <b>0 বা ±e</b> হতে পারে।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "স্ট্রিং তত্ত্ব অনুসারে পদার্থের ক্ষুদ্রতম কণা যে তন্তু দিয়ে গঠিত তার দৈর্ঘ্য কত?",
+          options: {
+            a: "10⁻³³ cm",
+            b: "10⁻³³ mm",
+            c: "10⁻³³ m",
+            d: "10⁻³⁵ m",
+          },
+          correct: "d",
+          explanation:
+            "<p>স্ট্রিং তত্ত্ব অনুসারে, পদার্থের ক্ষুদ্রতম কণাগুলো অতি ক্ষুদ্র তন্তু বা স্ট্রিং দিয়ে গঠিত। এই স্ট্রিংগুলির আনুমানিক দৈর্ঘ্য প্লাঙ্ক দৈর্ঘ্যের সমান, যা প্রায় <b>10⁻³⁵ মিটার</b>।</p>",
+        },
+        {
+          id: 33,
+          question: "হ্যাড্রন কোন মৌলিক কণা দিয়ে গঠিত?",
+          options: {
+            a: "মেসন",
+            b: "কোয়ার্ক",
+            c: "বোসন",
+            d: "ফার্মিয়ন",
+          },
+          correct: "b",
+          explanation:
+            "<p>হ্যাড্রন হলো যৌগিক কণা যা <b>কোয়ার্ক (Quark)</b> নামক মৌলিক কণা দ্বারা গঠিত।</p>",
+        },
+        {
+          id: 34,
+          question: "সব কিছুর তত্ত্ব বলা হয় কোনটিকে?",
+          options: {
+            a: "স্ট্রিং তত্ত্ব",
+            b: "কোয়ান্টাম তত্ত্ব",
+            c: "আপেক্ষিক তত্ত্ব",
+            d: "কোয়ার্ক তত্ত্ব",
+          },
+          correct: "a",
+          explanation:
+            "<p><b>স্ট্রিং তত্ত্ব (String Theory)</b> কে 'সব কিছুর তত্ত্ব' (Theory of Everything) বলা হয় কারণ এটি মহাবিশ্বের সকল মৌলিক বল এবং কণাগুলোকে একটি একক কাঠামোতে ব্যাখ্যা করার চেষ্টা করে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                            <div class="circle">${option}</div>
+                                            <span class="option-text">${question.options[option]}</span>
+                                            </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                                     <div class="explanation-content">
+                                                                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                                       ${question.explanation}
+                                                                                                     </div>
+                                                                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                                <p class="question-label">${
+                                                                                                  index +
+                                                                                                  1
+                                                                                                }. ${
+            question.question
+          }</p>
+                                                                                                <div class="options">
+                                                                                                  ${optionsHTML}
+                                                                                                </div>
+                                                                                                ${explanationHTML}
+                                                                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
